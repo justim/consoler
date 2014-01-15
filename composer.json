@@ -1,0 +1,25 @@
+{
+	"name": "consoler/consoler",
+	"description": "Sinatra-like application builder for the console",
+	"license": "MIT",
+	"version": "1.0.0",
+	"homepage": "https://github.com/justim/consoler",
+    "authors": [
+		{
+			"name": "Tim",
+			"homepage": "https://github.com/justim"
+		}
+	],
+	"support": {
+		"issues": "https://github.com/justim/consoler/issues",
+		"source": "https://github.com/justim/consoler"
+	},
+	"require": {
+		"php": ">=5.4.0"
+	},
+	"autoload": {
+		"psr-0": {
+			"Consoler": ""
+		}
+	}
+}

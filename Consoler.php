@@ -1150,7 +1150,7 @@ class Consoler
 	{
 		return function($data)
 		{
-			if (!empty(call_user_func_array('array_diff', array_map('array_keys', $data))))
+			if (count(call_user_func_array('array_diff', array_map('array_keys', $data))) > 0)
 			{
 				throw new \InvalidArgumentException('Table helper: Keys should be the same on all rows');
 			}

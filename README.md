@@ -13,6 +13,11 @@
 
 * `PHP >= 5.4`
 
+## Installation
+
+* For Consoler to work you only need the `Consoler.php` file, download it and hack away
+* Also available at [Packagist](https://packagist.org/packages/justim/consoler) (Composer)
+
 ## Workflow
 
 Begin by creating an instance of `Consoler` — in these example we use `app.php` as filename for the script:

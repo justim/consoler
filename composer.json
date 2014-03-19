@@ -1,5 +1,5 @@
 {
-	"name": "consoler/consoler",
+	"name": "justim/consoler",
 	"description": "Sinatra-like application builder for the console",
 	"license": "MIT",
 	"version": "1.0.0",

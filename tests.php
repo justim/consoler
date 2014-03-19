@@ -790,6 +790,47 @@ class Test
 		$app(new CustomClass);
 		return [];
 	}
+
+	public function testTableHelper(Consoler $app)
+	{
+		$app(function($table)
+		{
+			$table([
+				[
+					'foo' => '1',
+					'bar' => '42'
+				],
+				[
+					'foo' => '1.100',
+					'bar' => '42a'
+				],
+			]);
+
+			// numbers align to right, all other to left
+			$this->assertOutput(
+				"| foo   | bar |\n" .
+				"+-------+-----+\n" .
+				"|     1 | 42  |\n" .
+				"| 1.100 | 42a |\n"
+				);
+		});
+
+		return [];
+	}
+
+	public function testTableHelperThrows(Consoler $app, $throws = true)
+	{
+		$app(function($table)
+		{
+			// records need to have the same structure
+			$table([
+				['foo' => 1],
+				['bar' => 1],
+			]);
+		});
+
+		return [];
+	}
 }
 
 $app = new Consoler;

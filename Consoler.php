@@ -293,6 +293,7 @@ class Consoler
 				case 'password': $args[$i] = $this->_createPasswordHelper(); break;
 				case 'file':     $args[$i] = $this->_createFileHelper();     break;
 				case 'exit':     $args[$i] = $this->_createExitHelper();     break;
+				case 'table':    $args[$i] = $this->_createTableHelper();    break;
 				default:         $args[$i] = $parameterHelper($name);        break;
 			}
 
@@ -1141,6 +1142,67 @@ class Consoler
 				$error = $this->_createErrorHelper();
 				$error($errorMessage);
 				exit(1);
+			}
+		};
+	}
+
+	private function _createTableHelper()
+	{
+		return function($data)
+		{
+			if (!empty(call_user_func_array('array_diff', array_map('array_keys', $data))))
+			{
+				throw new \InvalidArgumentException('Table helper: Keys should be the same on all rows');
+			}
+
+			$output = $this->_createPrintHelper();
+
+			$tableInfo = [];
+			foreach ($data as $record)
+			{
+				foreach ($record as $name => $value)
+				{
+					$tableInfo[$name] = [
+						'numeric' => (@$tableInfo[$name]['width'] ?: true) && is_numeric($value),
+						'width' => max(@$tableInfo[$name]['width'] ?: 0, strlen($value)),
+					];
+				}
+			}
+
+			$row = function($in, $option = 'row') use ($tableInfo, $output)
+			{
+				$line = '|';
+
+				foreach ($in as $name => $value)
+				{
+					$line .= ' ' . str_pad(
+						$value,
+						$tableInfo[$name]['width'],
+						' ',
+						$tableInfo[$name]['numeric'] && $option === 'row' ? STR_PAD_LEFT : STR_PAD_RIGHT
+						) . ' |';
+				}
+
+				$output($line);
+
+				if ($option === 'underline')
+				{
+					$line = '+';
+
+					foreach ($tableInfo as $name => $info)
+					{
+						$line .= str_repeat('-', $info['width'] + 2) . '+';
+					}
+
+					$output($line);
+				}
+			};
+
+			$row(array_combine(array_keys($tableInfo), array_keys($tableInfo)), 'underline');
+
+			foreach ($data as $record)
+			{
+				$row($record);
 			}
 		};
 	}

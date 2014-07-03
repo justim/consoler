@@ -42,6 +42,9 @@ class Consoler
 	// should we handle exception internally (used for testing)
 	private $_handleExceptions = true;
 
+	// when handling exception, should we exit after the error/usage message
+	private $_exitOnFailure = true;
+
 	// streams used for in and output
 	private $_streams = [
 		'in'  => STDIN,
@@ -67,6 +70,13 @@ class Consoler
 	public function setHandleExceptions($flag)
 	{
 		$this->_handleExceptions = (bool) $flag;
+
+		return $this;
+	}
+
+	public function setExitOnFailure($flag)
+	{
+		$this->_exitOnFailure = (bool) $flag;
 
 		return $this;
 	}
@@ -128,6 +138,11 @@ class Consoler
 		try
 		{
 			$result = $this->_run($args);
+
+			if (!$result)
+			{
+				$this->usage();
+			}
 		}
 		catch (\Exception $e)
 		{
@@ -136,18 +151,26 @@ class Consoler
 				$error = $this->_createErrorHelper();
 				$error($e->getMessage());
 				$this->usage();
-				$exit = $this->_createExitHelper();
-				$exit();
+
+				// exit helper is impossible to test, it will crash phpunit
+				// @codeCoverageIgnoreStart
+				if ($this->_exitOnFailure)
+				{
+					$exit = $this->_createExitHelper();
+					$exit();
+				}
+				// @codeCoverageIgnoreEnd
+
+				$result = false;
 			}
 			else
 			{
 				throw $e;
-			}
-		}
 
-		if (!$result)
-		{
-			$this->usage();
+			// brace will never ever be reached
+			// @codeCoverageIgnoreStart
+			}
+			// @codeCoverageIgnoreEnd
 		}
 
 		return $result;
@@ -188,7 +211,7 @@ class Consoler
 	public function usage()
 	{
 		$error = $this->_createErrorHelper();
-		$error('Usage:');
+		$lines = ['Usage:'];
 
 		foreach ($this->_commands as $command)
 		{
@@ -236,8 +259,10 @@ class Consoler
 				$line .= ' -- ' . $command['description'];
 			}
 
-			$error($line);
+			$lines[] = $line;
 		}
+
+		$error(implode("\n", $lines));
 	}
 
 	private function _run($args, array $rawOptions = [])
@@ -712,6 +737,7 @@ class Consoler
 	private function _analyzeArgvValueLong($options, $rawArgName, $args)
 	{
 		$normalizedArgName = $this->_normalizedOptionName($rawArgName);
+		$result = null;
 
 		if (isset($options[$normalizedArgName]) &&
 			$options[$normalizedArgName][self::OPTION_ORIGINAL] === $rawArgName &&
@@ -721,7 +747,7 @@ class Consoler
 			{
 				if (isset($args[0]))
 				{
-					return [
+					$result = [
 						self::ARGUMENT_TYPE  => self::ARGUMENT_TYPE_VALUE,
 						self::ARGUMENT_NAME  => $normalizedArgName,
 						self::ARGUMENT_VALUE => $args[0],
@@ -730,7 +756,7 @@ class Consoler
 			}
 			else
 			{
-				return [
+				$result = [
 					self::ARGUMENT_TYPE  => self::ARGUMENT_TYPE_SINGLE,
 					self::ARGUMENT_NAME  => $normalizedArgName,
 					self::ARGUMENT_VALUE => true,
@@ -738,13 +764,13 @@ class Consoler
 			}
 		}
 
-		// invalid argument
-		return null;
+		return $result;
 	}
 
 	private function _analyzeArgvValueShort($options, $matchOptions, $rawFullArg, $args)
 	{
 		$normalizedFullArg = $this->_normalizedOptionName($rawFullArg);
+		$result = null;
 
 		if (strlen($normalizedFullArg) === 1 &&
 			isset($options[$normalizedFullArg]) &&
@@ -754,7 +780,7 @@ class Consoler
 		{
 			if (isset($args[0]))
 			{
-				return [
+				$result = [
 					self::ARGUMENT_TYPE  => self::ARGUMENT_TYPE_VALUE,
 					self::ARGUMENT_NAME  => $normalizedFullArg,
 					self::ARGUMENT_VALUE => $args[0],
@@ -787,15 +813,14 @@ class Consoler
 
 			if (!empty($mergeMatchOptions))
 			{
-				return [
+				$result = [
 					self::ARGUMENT_TYPE    => self::ARGUMENT_TYPE_MULTIPLE,
 					self::ARGUMENT_OPTIONS => $mergeMatchOptions,
 				];
 			}
 		}
 
-		// invalid argument
-		return null;
+		return $result;
 	}
 
 	private function _matchArguments($options, $argumentValues)
@@ -1083,6 +1108,8 @@ class Consoler
 
 	/**
 	 * Create a helper to ask for a password, password will stay hidden
+	 *
+	 * @codeCoverageIgnore - password helper is impossible to test, due to its dependency of a real shell
 	 */
 	private function _createPasswordHelper()
 	{
@@ -1124,6 +1151,8 @@ class Consoler
 	/**
 	 * Create a helper to terminate your app, with an optional error message
 	 * - with error message the status code is 1, without it its 0
+	 *
+	 * @codeCoverageIgnore - exit helper is impossible to test, it will crash phpunit
 	 */
 	private function _createExitHelper()
 	{
@@ -1219,7 +1248,7 @@ class Consoler
 		}
 		else if (is_string($callback) && strpos($callback, '::') !== false)
 		{
-			list($class, $method) = explode('::');
+			list($class, $method) = explode('::', $callback);
 			return new ReflectionMethod($class, $method);
 		}
 		else if (method_exists($callback, '__invoke'))
@@ -1247,12 +1276,7 @@ class Consoler
 
 		return function($name = null, $default = null) use ($combinedSources)
 		{
-			// when no key is give, give the source
-			if ($name === null)
-			{
-				return $combinedSources;
-			}
-			else if (array_key_exists($name, $combinedSources))
+			if (array_key_exists($name, $combinedSources))
 			{
 				return $combinedSources[$name];
 			}
@@ -1287,14 +1311,6 @@ class Consoler
 		{
 			throw new \InvalidArgumentException('Invalid directory: ' . $value);
 		}
-	}
-
-	/**
-	 * Helper function for easy key changing
-	 */
-	private function _changeKeys($list, Callable $callback)
-	{
-		return array_combine(array_map($callback, array_keys($list)), array_values($list));
 	}
 
 	private function _normalizedOptionName($optionName)

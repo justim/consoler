@@ -1,4 +1,4 @@
-# Consoler [![Build Status](https://secure.travis-ci.org/justim/consoler.png)](http://travis-ci.org/justim/consoler)
+# Consoler [![Build Status](https://secure.travis-ci.org/justim/consoler.png)](http://travis-ci.org/justim/consoler) [![Coverage Status](https://img.shields.io/coveralls/justim/consoler.svg)](https://coveralls.io/r/justim/consoler?branch=master)
 > Sinatra-like application builder for the console
 
 ## Features
@@ -126,7 +126,7 @@ Call with: `php app.php remove sherlock.mp4`
 
 ### Mooooaaaarrr
 
-Check out the tests in [tests.php](https://github.com/justim/consoler/blob/master/tests.php).
+Check out the tests in [tests/ConsolerTest.php](https://github.com/justim/consoler/blob/master/tests/ConsolerTest.php).
 
 ## Helpers
 > Helpers are available as parameter in the callback
